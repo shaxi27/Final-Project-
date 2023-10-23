@@ -1,0 +1,445 @@
+Project Proposal
+Shaista Fathima
+r Sys.Date
+Setting working directory and cran command to avoid errors while knitting the file #{r setup, include=FALSE} knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+
+loading the required packages
+
+library(tidyverse)
+## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+## ✔ ggplot2 3.4.0      ✔ purrr   0.3.4 
+## ✔ tibble  3.1.8      ✔ dplyr   1.0.10
+## ✔ tidyr   1.2.1      ✔ stringr 1.4.1 
+## ✔ readr   2.1.2      ✔ forcats 0.5.2 
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ dplyr::filter() masks stats::filter()
+## ✖ dplyr::lag()    masks stats::lag()
+library(tidyr)
+library(stats)
+library(ggplot2)
+library("dplyr")
+library(tidyverse)
+library(ggpubr)
+library(tinytex)
+What the data set is comprised of:
+This data set will help us identify and answer few important questions:
+1. The relation between the slope of the pipe with the upstream and downstream elevation of water which will show graphical illustrations if they are positively or negatively correlated.
+2. The extent of variation in the diameter of the pipe against the flow of water. Diameters might be large in areas of high water density and flux.
+3. Relation between changing slopes across different pipe lengths.
+4. Relation of Upstream flow to Dowstream flow in the pipe
+###5. Relationship between the slope of the pipe and changing diameters.
+
+Viewing the data Table and data clean up
+library(tidyverse)
+library(readxl)
+Stormwater <- read_excel("/Users/shaistafathima/Desktop/ISE 201/StormwaterData.xlsx")
+View(Stormwater)
+Removing unnecessary variables which have no relation and are only used as location identifierrs; Those are Facility identifier, Integer ID, Outfall ID, Outfall group ID, From Asset ID, From asset type, To Asset ID, To Asset Type, Year Lined, Liner type, Owned By, Source year, Plan created, Plan modified, Last update, Notes and Plan discrepancy.
+stormdata <- Stormwater[, !names(Stormwater) %in% c("Integer ID", "Facility Identifier", "Integer Id", "Outfall ID", "Outfall Group ID", "From Asset ID", "From Asset Type", "To Asset ID","Pipe Type", "To Asset Type", "Year Lined", "Liner type", "Owned By", "Source Year", "Plan Created", "Plan Modified", "Last Update Date", "Notes", "Plan Discrepancy/Rehab", "Liner Type")]
+
+head(stormdata)
+## # A tibble: 6 × 8
+##   `Street ID` `Upstream Elevation` Downs…¹ Diame…² Length  Slope Mater…³ Insta…⁴
+##         <dbl>                <dbl>   <dbl> <chr>    <dbl>  <dbl> <chr>     <dbl>
+## 1       21659                 65.0    56.0 "24\""     310  0.029 Reinfo…      NA
+## 2       63377                 NA      NA    <NA>       NA NA     Unknown    2003
+## 3       63491                 NA      NA    <NA>       NA NA     Unknown    2003
+## 4       22338                 78.9    77.8 "15\""     195  0.006 Reinfo…    2006
+## 5       22801                102.    102.  "24\""     164  0.002 Reinfo…    2005
+## 6       22318                 68      64   "12\""      44  0.091 Reinfo…    1999
+## # … with abbreviated variable names ¹​`Downstream Elevation`, ²​Diameter,
+## #   ³​Material, ⁴​`Install Year`
+view(stormdata)
+###Missing variables in this data
+
+stormdata[!complete.cases(stormdata),]
+## # A tibble: 97 × 8
+##    `Street ID` Upstream Elevatio…¹ Downs…² Diame…³ Length  Slope Mater…⁴ Insta…⁵
+##          <dbl>               <dbl>   <dbl> <chr>    <dbl>  <dbl> <chr>     <dbl>
+##  1       21659                65.0    56.0 "24\""     310  0.029 Reinfo…      NA
+##  2       63377                NA      NA    <NA>       NA NA     Unknown    2003
+##  3       63491                NA      NA    <NA>       NA NA     Unknown    2003
+##  4       71705                51.2    50.5 "33\""      NA NA     Reinfo…    1999
+##  5       26190                50.8    NA   "27\""     260  0.004 Reinfo…    2010
+##  6       20636                NA      52.8 "24\""       7 NA     Unknown    2010
+##  7       72704                NA      39.0 "33\""      14  0.002 Reinfo…    2008
+##  8       21696                58.7    NA   "21\""     192 NA     C          2007
+##  9        9991               199.    195.  "36\""      NA  0.025 Reinfo…    2008
+## 10        9991               195.    190.  "36\""      NA  0.025 Reinfo…    2008
+## # … with 87 more rows, and abbreviated variable names ¹​`Upstream Elevation`,
+## #   ²​`Downstream Elevation`, ³​Diameter, ⁴​Material, ⁵​`Install Year`
+###Identifying the head and tail of the dataset
+
+stormdataclean<-stormdata
+head(stormdataclean)
+## # A tibble: 6 × 8
+##   `Street ID` `Upstream Elevation` Downs…¹ Diame…² Length  Slope Mater…³ Insta…⁴
+##         <dbl>                <dbl>   <dbl> <chr>    <dbl>  <dbl> <chr>     <dbl>
+## 1       21659                 65.0    56.0 "24\""     310  0.029 Reinfo…      NA
+## 2       63377                 NA      NA    <NA>       NA NA     Unknown    2003
+## 3       63491                 NA      NA    <NA>       NA NA     Unknown    2003
+## 4       22338                 78.9    77.8 "15\""     195  0.006 Reinfo…    2006
+## 5       22801                102.    102.  "24\""     164  0.002 Reinfo…    2005
+## 6       22318                 68      64   "12\""      44  0.091 Reinfo…    1999
+## # … with abbreviated variable names ¹​`Downstream Elevation`, ²​Diameter,
+## #   ³​Material, ⁴​`Install Year`
+tail(stormdataclean)
+## # A tibble: 6 × 8
+##   `Street ID` `Upstream Elevation` Downst…¹ Diame…² Length Slope Mater…³ Insta…⁴
+##         <dbl>                <dbl>    <dbl> <chr>    <dbl> <dbl> <chr>     <dbl>
+## 1       15820                112.     112.  "18\""      40  3e-3 High D…    2007
+## 2       15820                 NA      114.  "18\""       9 NA    High D…    2007
+## 3       15820                112.     112.   <NA>       21  4e-3 High D…    2007
+## 4      106098                 82.0     81.7 "15\""      82  4e-3 Reinfo…    2007
+## 5          NA                 NA       NA    <NA>       NA NA    <NA>         NA
+## 6          NA                 NA       NA    <NA>       NA NA    <NA>         NA
+## # … with abbreviated variable names ¹​`Downstream Elevation`, ²​Diameter,
+## #   ³​Material, ⁴​`Install Year`
+str(stormdataclean)
+## tibble [352 × 8] (S3: tbl_df/tbl/data.frame)
+##  $ Street ID           : num [1:352] 21659 63377 63491 22338 22801 ...
+##  $ Upstream Elevation  : num [1:352] 65 NA NA 78.9 101.8 ...
+##  $ Downstream Elevation: num [1:352] 56 NA NA 77.8 101.5 ...
+##  $ Diameter            : chr [1:352] "24\"" NA NA "15\"" ...
+##  $ Length              : num [1:352] 310 NA NA 195 164 44 NA 347 80 43 ...
+##  $ Slope               : num [1:352] 0.029 NA NA 0.006 0.002 0.091 NA 0.003 0.003 0.009 ...
+##  $ Material            : chr [1:352] "Reinforced Concrete" "Unknown" "Unknown" "Reinforced Concrete" ...
+##  $ Install Year        : num [1:352] NA 2003 2003 2006 2005 ...
+###Number of rows and columns in the Data set.
+
+nrow(stormdataclean)
+## [1] 352
+ncol(stormdataclean)
+## [1] 8
+###There are 255 rows and 8 columns in the cleaned dataset
+
+Dropping Non Available Values.
+
+stormdata<-drop_na(stormdataclean)
+stormdata
+## # A tibble: 255 × 8
+##    `Street ID` `Upstream Elevation` Downs…¹ Diame…² Length Slope Mater…³ Insta…⁴
+##          <dbl>                <dbl>   <dbl> <chr>    <dbl> <dbl> <chr>     <dbl>
+##  1       22338                 78.9    77.8 "15\""     195 0.006 Reinfo…    2006
+##  2       22801                102.    102.  "24\""     164 0.002 Reinfo…    2005
+##  3       22318                 68      64   "12\""      44 0.091 Reinfo…    1999
+##  4       22106                 46.6    45.6 "24\""     347 0.003 Reinfo…    1999
+##  5       83065                 46.9    46.6 "24\""      80 0.003 Reinfo…    1999
+##  6       21680                 43.8    43.4 "27\""      43 0.009 Reinfo…    1999
+##  7       22639                 85.3    85.2 "12\""      32 0.005 Reinfo…    1999
+##  8       22639                 87.1    85.3 "12\""     382 0.005 Reinfo…    1999
+##  9       22624                 82.5    80.0 "15\""     550 0.005 Reinfo…    1999
+## 10       11812                240.    238.  "33\""     200 0.012 Reinfo…    1999
+## # … with 245 more rows, and abbreviated variable names ¹​`Downstream Elevation`,
+## #   ²​Diameter, ³​Material, ⁴​`Install Year`
+###Determining the type of variable whether it is a charecter, numeric or factor.
+
+attach(stormdata)
+names(stormdata)
+## [1] "Street ID"            "Upstream Elevation"   "Downstream Elevation"
+## [4] "Diameter"             "Length"               "Slope"               
+## [7] "Material"             "Install Year"
+view(stormdata)
+class(Slope)
+## [1] "numeric"
+class("Upstream Elevation")
+## [1] "character"
+class(Length)
+## [1] "numeric"
+class(Diameter)
+## [1] "character"
+class(Material)
+## [1] "character"
+###Determining the summary statistics of the data.
+
+summary(Diameter)
+##    Length     Class      Mode 
+##       255 character character
+summary(Slope)
+##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+## -0.08900  0.00300  0.00500  0.01192  0.01000  0.22900
+summary(Length)
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##     9.0    85.5   186.0   219.5   310.5   890.0
+summary("Upstream Elevation")
+##    Length     Class      Mode 
+##         1 character character
+summary("Downstream Elevation")
+##    Length     Class      Mode 
+##         1 character character
+summary(Material)
+##    Length     Class      Mode 
+##       255 character character
+summary("Install Year")
+##    Length     Class      Mode 
+##         1 character character
+###Splitting charecter data present in the diameter column to convert it to numerica data
+
+stormdata[['Diameter']]
+##   [1] "15\"" "24\"" "12\"" "24\"" "24\"" "27\"" "12\"" "12\"" "15\"" "33\""
+##  [11] "15\"" "27\"" "36\"" "36\"" "36\"" "36\"" "18\"" "33\"" "36\"" "36\""
+##  [21] "18\"" "12\"" "15\"" "15\"" "21\"" "18\"" "15\"" "15\"" "24\"" "24\""
+##  [31] "10\"" "8\""  "15\"" "15\"" "24\"" "24\"" "18\"" "15\"" "15\"" "18\""
+##  [41] "18\"" "24\"" "24\"" "12\"" "18\"" "18\"" "18\"" "18\"" "12\"" "8\"" 
+##  [51] "12\"" "12\"" "42\"" "42\"" "15\"" "10\"" "10\"" "10\"" "15\"" "15\""
+##  [61] "15\"" "18\"" "15\"" "18\"" "15\"" "15\"" "15\"" "24\"" "27\"" "15\""
+##  [71] "15\"" "18\"" "18\"" "15\"" "15\"" "18\"" "60\"" "21\"" "12\"" "12\""
+##  [81] "54\"" "54\"" "72\"" "72\"" "12\"" "36\"" "15\"" "27\"" "30\"" "15\""
+##  [91] "12\"" "18\"" "12\"" "12\"" "15\"" "21\"" "10\"" "21\"" "21\"" "24\""
+## [101] "15\"" "48\"" "48\"" "48\"" "48\"" "10\"" "24\"" "30\"" "24\"" "24\""
+## [111] "24\"" "60\"" "60\"" "48\"" "48\"" "27\"" "18\"" "66\"" "27\"" "18\""
+## [121] "27\"" "27\"" "27\"" "15\"" "12\"" "10\"" "10\"" "8\""  "16\"" "18\""
+## [131] "12\"" "12\"" "15\"" "18\"" "15\"" "12\"" "15\"" "18\"" "66\"" "66\""
+## [141] "10\"" "15\"" "21\"" "10\"" "12\"" "12\"" "12\"" "15\"" "15\"" "36\""
+## [151] "16\"" "14\"" "15\"" "15\"" "15\"" "12\"" "12\"" "12\"" "12\"" "18\""
+## [161] "18\"" "18\"" "18\"" "18\"" "18\"" "66\"" "66\"" "60\"" "12\"" "12\""
+## [171] "12\"" "12\"" "66\"" "66\"" "66\"" "60\"" "14\"" "24\"" "27\"" "30\""
+## [181] "24\"" "30\"" "15\"" "12\"" "24\"" "21\"" "60\"" "18\"" "10\"" "30\""
+## [191] "30\"" "30\"" "30\"" "30\"" "30\"" "30\"" "18\"" "27\"" "27\"" "27\""
+## [201] "24\"" "24\"" "24\"" "24\"" "24\"" "24\"" "24\"" "12\"" "12\"" "12\""
+## [211] "12\"" "12\"" "12\"" "6\""  "18\"" "10\"" "33\"" "12\"" "15\"" "60\""
+## [221] "60\"" "18\"" "15\"" "10\"" "8\""  "18\"" "36\"" "18\"" "18\"" "60\""
+## [231] "60\"" "18\"" "24\"" "10\"" "14\"" "16\"" "12\"" "12\"" "18\"" "10\""
+## [241] "10\"" "18\"" "12\"" "15\"" "15\"" "15\"" "15\"" "15\"" "15\"" "15\""
+## [251] "18\"" "12\"" "18\"" "18\"" "15\""
+names(stormdata)
+## [1] "Street ID"            "Upstream Elevation"   "Downstream Elevation"
+## [4] "Diameter"             "Length"               "Slope"               
+## [7] "Material"             "Install Year"
+gfg<- stormdata[['Diameter']]
+answer<-strsplit(gfg,split = "\"")
+num <- as.numeric(unlist(answer))
+stormdata$Diameter <- num
+stormdata[['Diameter']]
+##   [1] 15 24 12 24 24 27 12 12 15 33 15 27 36 36 36 36 18 33 36 36 18 12 15 15 21
+##  [26] 18 15 15 24 24 10  8 15 15 24 24 18 15 15 18 18 24 24 12 18 18 18 18 12  8
+##  [51] 12 12 42 42 15 10 10 10 15 15 15 18 15 18 15 15 15 24 27 15 15 18 18 15 15
+##  [76] 18 60 21 12 12 54 54 72 72 12 36 15 27 30 15 12 18 12 12 15 21 10 21 21 24
+## [101] 15 48 48 48 48 10 24 30 24 24 24 60 60 48 48 27 18 66 27 18 27 27 27 15 12
+## [126] 10 10  8 16 18 12 12 15 18 15 12 15 18 66 66 10 15 21 10 12 12 12 15 15 36
+## [151] 16 14 15 15 15 12 12 12 12 18 18 18 18 18 18 66 66 60 12 12 12 12 66 66 66
+## [176] 60 14 24 27 30 24 30 15 12 24 21 60 18 10 30 30 30 30 30 30 30 18 27 27 27
+## [201] 24 24 24 24 24 24 24 12 12 12 12 12 12  6 18 10 33 12 15 60 60 18 15 10  8
+## [226] 18 36 18 18 60 60 18 24 10 14 16 12 12 18 10 10 18 12 15 15 15 15 15 15 15
+## [251] 18 12 18 18 15
+stormdata
+## # A tibble: 255 × 8
+##    `Street ID` `Upstream Elevation` Downs…¹ Diame…² Length Slope Mater…³ Insta…⁴
+##          <dbl>                <dbl>   <dbl>   <dbl>  <dbl> <dbl> <chr>     <dbl>
+##  1       22338                 78.9    77.8      15    195 0.006 Reinfo…    2006
+##  2       22801                102.    102.       24    164 0.002 Reinfo…    2005
+##  3       22318                 68      64        12     44 0.091 Reinfo…    1999
+##  4       22106                 46.6    45.6      24    347 0.003 Reinfo…    1999
+##  5       83065                 46.9    46.6      24     80 0.003 Reinfo…    1999
+##  6       21680                 43.8    43.4      27     43 0.009 Reinfo…    1999
+##  7       22639                 85.3    85.2      12     32 0.005 Reinfo…    1999
+##  8       22639                 87.1    85.3      12    382 0.005 Reinfo…    1999
+##  9       22624                 82.5    80.0      15    550 0.005 Reinfo…    1999
+## 10       11812                240.    238.       33    200 0.012 Reinfo…    1999
+## # … with 245 more rows, and abbreviated variable names ¹​`Downstream Elevation`,
+## #   ²​Diameter, ³​Material, ⁴​`Install Year`
+head(Diameter)
+## [1] "15\"" "24\"" "12\"" "24\"" "24\"" "27\""
+###Creating ranges for the Diameter category column
+
+Diameter_cat <- stormdata$Diameter
+Diameter_cat[stormdata$Diameter <= 10] <- "0-10"                   
+Diameter_cat[stormdata$Diameter > 10 & stormdata$Diameter <= 20]   <- "10-20" 
+Diameter_cat[stormdata$Diameter > 20 & stormdata$Diameter <= 30]   <- "20-30"
+Diameter_cat[stormdata$Diameter > 30 & stormdata$Diameter <= 40]   <- "30-40"
+Diameter_cat[stormdata$Diameter > 40 & stormdata$Diameter <= 50]   <- "40-50"
+Diameter_cat[stormdata$Diameter > 50 & stormdata$Diameter <= 60]   <- "50-60"
+Diameter_cat[stormdata$Diameter > 60 & stormdata$Diameter <= 70]   <- "60-70"
+Diameter_cat[stormdata$Diameter > 70]   <- "70+"
+Diameter_cat<- as.factor(Diameter_cat)                
+print(Diameter_cat) 
+##   [1] 10-20 20-30 10-20 20-30 20-30 20-30 10-20 10-20 10-20 30-40 10-20 20-30
+##  [13] 30-40 30-40 30-40 30-40 10-20 30-40 30-40 30-40 10-20 10-20 10-20 10-20
+##  [25] 20-30 10-20 10-20 10-20 20-30 20-30 0-10  0-10  10-20 10-20 20-30 20-30
+##  [37] 10-20 10-20 10-20 10-20 10-20 20-30 20-30 10-20 10-20 10-20 10-20 10-20
+##  [49] 10-20 0-10  10-20 10-20 40-50 40-50 10-20 0-10  0-10  0-10  10-20 10-20
+##  [61] 10-20 10-20 10-20 10-20 10-20 10-20 10-20 20-30 20-30 10-20 10-20 10-20
+##  [73] 10-20 10-20 10-20 10-20 50-60 20-30 10-20 10-20 50-60 50-60 70+   70+  
+##  [85] 10-20 30-40 10-20 20-30 20-30 10-20 10-20 10-20 10-20 10-20 10-20 20-30
+##  [97] 0-10  20-30 20-30 20-30 10-20 40-50 40-50 40-50 40-50 0-10  20-30 20-30
+## [109] 20-30 20-30 20-30 50-60 50-60 40-50 40-50 20-30 10-20 60-70 20-30 10-20
+## [121] 20-30 20-30 20-30 10-20 10-20 0-10  0-10  0-10  10-20 10-20 10-20 10-20
+## [133] 10-20 10-20 10-20 10-20 10-20 10-20 60-70 60-70 0-10  10-20 20-30 0-10 
+## [145] 10-20 10-20 10-20 10-20 10-20 30-40 10-20 10-20 10-20 10-20 10-20 10-20
+## [157] 10-20 10-20 10-20 10-20 10-20 10-20 10-20 10-20 10-20 60-70 60-70 50-60
+## [169] 10-20 10-20 10-20 10-20 60-70 60-70 60-70 50-60 10-20 20-30 20-30 20-30
+## [181] 20-30 20-30 10-20 10-20 20-30 20-30 50-60 10-20 0-10  20-30 20-30 20-30
+## [193] 20-30 20-30 20-30 20-30 10-20 20-30 20-30 20-30 20-30 20-30 20-30 20-30
+## [205] 20-30 20-30 20-30 10-20 10-20 10-20 10-20 10-20 10-20 0-10  10-20 0-10 
+## [217] 30-40 10-20 10-20 50-60 50-60 10-20 10-20 0-10  0-10  10-20 30-40 10-20
+## [229] 10-20 50-60 50-60 10-20 20-30 0-10  10-20 10-20 10-20 10-20 10-20 0-10 
+## [241] 0-10  10-20 10-20 10-20 10-20 10-20 10-20 10-20 10-20 10-20 10-20 10-20
+## [253] 10-20 10-20 10-20
+## Levels: 0-10 10-20 20-30 30-40 40-50 50-60 60-70 70+
+stormdata[31, c("Diameter")]
+## # A tibble: 1 × 1
+##   Diameter
+##      <dbl>
+## 1       10
+###Adding a new column od Diameter categories that is Diameter_cat to the stormdata dataframe
+
+stormdata$Diameter_cat <- Diameter_cat
+head(stormdata)
+## # A tibble: 6 × 9
+##   `Street ID` Upstream El…¹ Downs…² Diame…³ Length Slope Mater…⁴ Insta…⁵ Diame…⁶
+##         <dbl>         <dbl>   <dbl>   <dbl>  <dbl> <dbl> <chr>     <dbl> <fct>  
+## 1       22338          78.9    77.8      15    195 0.006 Reinfo…    2006 10-20  
+## 2       22801         102.    102.       24    164 0.002 Reinfo…    2005 20-30  
+## 3       22318          68      64        12     44 0.091 Reinfo…    1999 10-20  
+## 4       22106          46.6    45.6      24    347 0.003 Reinfo…    1999 20-30  
+## 5       83065          46.9    46.6      24     80 0.003 Reinfo…    1999 20-30  
+## 6       21680          43.8    43.4      27     43 0.009 Reinfo…    1999 20-30  
+## # … with abbreviated variable names ¹​`Upstream Elevation`,
+## #   ²​`Downstream Elevation`, ³​Diameter, ⁴​Material, ⁵​`Install Year`,
+## #   ⁶​Diameter_cat
+###Before plotting this dataset we would be interested to estimate the velocity and discharge through each pipe. This data was estimated with the current data provided to us. Calculating the velocity has a few parameters calculated below.
+
+###Estimating the area of the pipe; Area= pi*d^2/4
+
+names(stormdata)
+## [1] "Street ID"            "Upstream Elevation"   "Downstream Elevation"
+## [4] "Diameter"             "Length"               "Slope"               
+## [7] "Material"             "Install Year"         "Diameter_cat"
+diam = stormdata$Diameter
+stormdata['Area'] = diam^2*pi /4
+head(stormdata)
+## # A tibble: 6 × 10
+##   `Street ID` Upstr…¹ Downs…² Diame…³ Length Slope Mater…⁴ Insta…⁵ Diame…⁶  Area
+##         <dbl>   <dbl>   <dbl>   <dbl>  <dbl> <dbl> <chr>     <dbl> <fct>   <dbl>
+## 1       22338    78.9    77.8      15    195 0.006 Reinfo…    2006 10-20    177.
+## 2       22801   102.    102.       24    164 0.002 Reinfo…    2005 20-30    452.
+## 3       22318    68      64        12     44 0.091 Reinfo…    1999 10-20    113.
+## 4       22106    46.6    45.6      24    347 0.003 Reinfo…    1999 20-30    452.
+## 5       83065    46.9    46.6      24     80 0.003 Reinfo…    1999 20-30    452.
+## 6       21680    43.8    43.4      27     43 0.009 Reinfo…    1999 20-30    573.
+## # … with abbreviated variable names ¹​`Upstream Elevation`,
+## #   ²​`Downstream Elevation`, ³​Diameter, ⁴​Material, ⁵​`Install Year`,
+## #   ⁶​Diameter_cat
+###Wetted Perimeter of pipe = D/8
+
+diam1 = stormdata$Diameter
+stormdata['Wetted Perimeter'] = diam/8
+head(stormdata)
+## # A tibble: 6 × 11
+##   `Street ID` Upstr…¹ Downs…² Diame…³ Length Slope Mater…⁴ Insta…⁵ Diame…⁶  Area
+##         <dbl>   <dbl>   <dbl>   <dbl>  <dbl> <dbl> <chr>     <dbl> <fct>   <dbl>
+## 1       22338    78.9    77.8      15    195 0.006 Reinfo…    2006 10-20    177.
+## 2       22801   102.    102.       24    164 0.002 Reinfo…    2005 20-30    452.
+## 3       22318    68      64        12     44 0.091 Reinfo…    1999 10-20    113.
+## 4       22106    46.6    45.6      24    347 0.003 Reinfo…    1999 20-30    452.
+## 5       83065    46.9    46.6      24     80 0.003 Reinfo…    1999 20-30    452.
+## 6       21680    43.8    43.4      27     43 0.009 Reinfo…    1999 20-30    573.
+## # … with 1 more variable: `Wetted Perimeter` <dbl>, and abbreviated variable
+## #   names ¹​`Upstream Elevation`, ²​`Downstream Elevation`, ³​Diameter, ⁴​Material,
+## #   ⁵​`Install Year`, ⁶​Diameter_cat
+###Calculating the Hydraulic radius R= Area/Wetted perimeter of the pipe
+
+H_Radius = stormdata$Area/stormdata$`Wetted Perimeter`
+stormdata['Hydraulic Radius'] = H_Radius
+head(stormdata)
+## # A tibble: 6 × 12
+##   `Street ID` Upstr…¹ Downs…² Diame…³ Length Slope Mater…⁴ Insta…⁵ Diame…⁶  Area
+##         <dbl>   <dbl>   <dbl>   <dbl>  <dbl> <dbl> <chr>     <dbl> <fct>   <dbl>
+## 1       22338    78.9    77.8      15    195 0.006 Reinfo…    2006 10-20    177.
+## 2       22801   102.    102.       24    164 0.002 Reinfo…    2005 20-30    452.
+## 3       22318    68      64        12     44 0.091 Reinfo…    1999 10-20    113.
+## 4       22106    46.6    45.6      24    347 0.003 Reinfo…    1999 20-30    452.
+## 5       83065    46.9    46.6      24     80 0.003 Reinfo…    1999 20-30    452.
+## 6       21680    43.8    43.4      27     43 0.009 Reinfo…    1999 20-30    573.
+## # … with 2 more variables: `Wetted Perimeter` <dbl>, `Hydraulic Radius` <dbl>,
+## #   and abbreviated variable names ¹​`Upstream Elevation`,
+## #   ²​`Downstream Elevation`, ³​Diameter, ⁴​Material, ⁵​`Install Year`,
+## #   ⁶​Diameter_cat
+###Estimating velocity through the pipe using Hazen Williams pipe equation where V= K x CR^0.63 x S^0.54, where K is the conversion factor, Assuming, C is the roughness coefficient of concrete = 100, R is the hydraulic radius and S is the slope of the pipe. Where K= 0.849
+
+A <- stormdata$`Hydraulic Radius`
+head(A)
+## [1]  94.24778 150.79645  75.39822 150.79645 150.79645 169.64600
+B <- stormdata$Slope
+head(B)
+## [1] 0.006 0.002 0.091 0.003 0.003 0.009
+C<-A^0.63
+D<-B^0.54
+velocity=0.849*100*C*D
+stormdata['Velocity']= velocity
+head(stormdata)
+## # A tibble: 6 × 13
+##   `Street ID` Upstr…¹ Downs…² Diame…³ Length Slope Mater…⁴ Insta…⁵ Diame…⁶  Area
+##         <dbl>   <dbl>   <dbl>   <dbl>  <dbl> <dbl> <chr>     <dbl> <fct>   <dbl>
+## 1       22338    78.9    77.8      15    195 0.006 Reinfo…    2006 10-20    177.
+## 2       22801   102.    102.       24    164 0.002 Reinfo…    2005 20-30    452.
+## 3       22318    68      64        12     44 0.091 Reinfo…    1999 10-20    113.
+## 4       22106    46.6    45.6      24    347 0.003 Reinfo…    1999 20-30    452.
+## 5       83065    46.9    46.6      24     80 0.003 Reinfo…    1999 20-30    452.
+## 6       21680    43.8    43.4      27     43 0.009 Reinfo…    1999 20-30    573.
+## # … with 3 more variables: `Wetted Perimeter` <dbl>, `Hydraulic Radius` <dbl>,
+## #   Velocity <dbl>, and abbreviated variable names ¹​`Upstream Elevation`,
+## #   ²​`Downstream Elevation`, ³​Diameter, ⁴​Material, ⁵​`Install Year`,
+## #   ⁶​Diameter_cat
+#Answering the important questions in this dataset ####Plotting a boxplot on the slope of the pipe to represent outliers
+
+boxplot(Slope, main="Boxplot of Slope", ylab="Slope of the Pipe", ylim=c(0,0.04), las=1)
+
+
+quantile(Slope, probs=c(0,0.25,0.5,0.75,1), na.rm=TRUE)
+##     0%    25%    50%    75%   100% 
+## -0.089  0.003  0.005  0.010  0.229
+To plot the relation between diameter and boxplot we are grouping the diamters by range into a new column.
+
+Plotting a boxplot between a numeric and categorical variable showing how slope of the pipe varies across different diameters.
+
+ggplot(data = stormdata, aes(Slope, Diameter_cat))+ 
+         geom_boxplot(width=0.8, color= "Black", fill= "blue", alpha=0.2)+
+         coord_cartesian(xlim = c(0,0.075), ylim = c(0,7))+
+         theme(legend.position="none")+
+         #scale_x_continuous(n.breaks=0.1)+
+         stat_summary(fun = "mean", geom = "point", shape = 8, size = 2, color = "white")
+
+
+#pglot + coord_cartesian(ylim = c(0,0.2), xlim = c(0,10))
+###The boxlplot aboves gives the reader information that the largest range of pipe diameters common to this data set fall in the range of 40-50. It The range 10-20 has the highest number of outliers compared to other ranges.
+
+View(stormdata)
+plot(stormdata$Velocity, stormdata$'Upstream Elevation', 
+     col = "Black", pch = 19,
+     main = "Velocity of water in pipe v/s Upstream Elevation", 
+     xlab = "Velocity", ylab = "Upstream Elevation", lwd = 1)
+
+
+###This plot conveys that the Velocity of water is directly proportional to the Upstream flow of water in the pipe and shows a strong positive relationship. It means that if velocity of water in pipe is high, the the elevation of water upstream is also high.
+
+###Plotting an enhanced histogram showing the relation between
+
+par(mfrow = c(2,1))
+
+hist(stormdataclean$'Upstream Elevation', xlab = "Upstream Elevation", lwd = 2, 
+main = "Histogram of Upstream Elevation", col= 'Blue')
+
+hist(stormdataclean$'Downstream Elevation', col = 'Red', 
+     xlab = "Downstream Elevation", lwd = 2.5, main = "Histogram of Downstream Elevation")
+ The relationship between upstream and downstream is fairly similar, it represents that of a pareto chart where maximum values contribute to 80% of the data. Upstream and downstream elevations are maximum at values between 100 to 150.
+
+stormdata %>%
+  ggdensity(x       = "Length",
+            add     = "mean", 
+            rug     =  TRUE,
+            color   = "Black", 
+            fill    = "Blue",
+            title   = "Density plot",
+            xlab    = "Length",
+            ylab    = "Slope",
+            palette = c("#2e00fa", "#a000bc", "#ca0086", "#e40058"))
+## Warning: `geom_vline()`: Ignoring `mapping` because `xintercept` was provided.
+## Warning: `geom_vline()`: Ignoring `data` because `xintercept` was provided.
+## Warning: The dot-dot notation (`..density..`) was deprecated in ggplot2 3.4.0.
+## ℹ Please use `after_stat(density)` instead.
+## ℹ The deprecated feature was likely used in the ggpubr package.
+##   Please report the issue at <]8;;https://github.com/kassambara/ggpubr/issueshttps://github.com/kassambara/ggpubr/issues]8;;>.
+ ###This density plot indicated that the mean of pipe length is close to 200ft. Therefor this gives us information that mean pipe length in the data set of 200 corresponds to a pipe slope of 0.002 It shows a negative relationship between slope and pipe length. Larger length pipes will have a smaller slope or inclination.
+
+#{r echo=TRUE} barplot(stormdata, main = "Slope v/s Upstream and Downstream Elevation",xlab = "Elevation heads", ylab = "Slope",col = c("darkgrey", "darkblue", "red"),legend.text = rownames(stormdata), beside = FALSE)
